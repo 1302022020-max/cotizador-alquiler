@@ -5,7 +5,12 @@ from flask import Flask, jsonify, render_template, request, send_from_directory
 
 app = Flask(__name__)
 paquete = joblib.load("modelo_alquiler.pkl")
-modelo, columnas = paquete["modelo"], paquete["columnas"]
+
+if isinstance(paquete, dict):
+    modelo, columnas = paquete["modelo"], paquete["columnas"]
+else:
+    modelo = paquete
+    columnas = list(modelo.feature_names_in_)
 
 def numero(valor):
     valor = (valor or "").strip().replace(",", ".")
