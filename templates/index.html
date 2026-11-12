@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#007bff">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="https://flaticon.com">
+    <title>Alquileres Lima</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 15px; background: #f0f2f5; }
+        .card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); max-width: 480px; margin: auto; }
+        h2 { text-align: center; color: #1a1a1a; margin-top: 0; }
+        label { display: block; margin-top: 12px; font-weight: 600; font-size: 14px; color: #444; }
+        input, select { width: 100%; padding: 12px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 10px; font-size: 16px; }
+        button { width: 100%; padding: 14px; background: #007bff; color: white; border: none; border-radius: 10px; margin-top: 20px; cursor: pointer; font-size: 17px; font-weight: bold; }
+        button:active { background: #0056b3; transform: scale(0.98); }
+        #resultado { margin-top: 18px; font-size: 20px; font-weight: bold; text-align: center; padding: 12px; border-radius: 10px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>🏠 Cotizador Alquiler</h2>
+        <label>Tipo de inmueble</label>
+        <select id="tipo">
+            <option value="Apartamento">Apartamento</option>
+            <option value="Casa">Casa</option>
+            <option value="Casa de playa">Casa de playa</option>
+            <option value="Habitación">Habitación</option>
+        </select>
+
+        <label>Dormitorios *</label>
+        <input type="number" id="dormitorios" inputmode="numeric" placeholder="Ej. 2" required>
+
+        <label>Baños *</label>
+        <input type="number" id="banos" inputmode="numeric" placeholder="Ej. 2" required>
+
+        <label>Área (m²) *</label>
+        <input type="number" id="area_m2" inputmode="decimal" placeholder="Ej. 85" required>
+
+        <label>Antigüedad (años)</label>
+        <input type="number" id="antiguedad" inputmode="numeric" placeholder="Opcional">
+
+        <label>Mantenimiento (Soles)</label>
+        <input type="number" id="mantenimiento_soles" inputmode="decimal" placeholder="Opcional">
+
+        <label>Zona Lima (código)</label>
+        <input type="number" id="zona_lima" inputmode="numeric" value="0">
+
+        <button onclick="calcular()">Calcular Alquiler</button>
+        <div id="resultado"></div>
+    </div>
+
+    <script>
+        async function calcular() {
+            const div = document.getElementById("resultado");
+            div.style.background = "#e9ecef";
+            div.style.color = "#333";
+            div.innerText = "Calculando...";
+
+            const datos = {
+                tipo: document.getElementById("tipo").value,
+                dormitorios: document.getElementById("dormitorios").value,
+                banos: document.getElementById("banos").value,
+                area_m2: document.getElementById("area_m2").value,
+                antiguedad: document.getElementById("antiguedad").value,
+                mantenimiento_soles: document.getElementById("mantenimiento_soles").value,
+                zona_lima: document.getElementById("zona_lima").value
+            };
+
+            const res = await fetch("/predecir", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(datos)
+            });
+
+            const json = await res.json();
+            if (res.ok) {
+                div.style.background = "#d4edda";
+                div.style.color = "#155724";
+                div.innerText = "Estimado: S/ " + json.precio;
+            } else {
+                div.style.background = "#f8d7da";
+                div.style.color = "#721c24";
+                div.innerText = json.error;
+            }
+        }
+    </script>
+</body>
+</html>
