@@ -1,7 +1,9 @@
+import struct
+import zlib
 import joblib
 import numpy as np
 import pandas as pd
-from flask import Flask, jsonify, render_template, request, send_from_directory
+from flask import Flask, Response, jsonify, render_template, request, send_from_directory
 
 app = Flask(__name__)
 paquete = joblib.load("modelo_alquiler.pkl")
@@ -11,6 +13,22 @@ if isinstance(paquete, dict):
 else:
     modelo = paquete
     columnas = list(modelo.feature_names_in_)
+
+def crear_png_azul(size):
+    # Genera un icono PNG valido cuadrado azul (#007bff) con marco blanco
+    raw = bytearray()
+    borde = size // 8
+    for y in range(size):
+        raw.append(0)
+        for x in range(size):
+            if x < borde or x >= size - borde or y < borde or y >= size - borde:
+                raw.extend((255, 255, 255, 255))
+            else:
+                raw.extend((0, 123, 255, 255))
+    def chunk(tag, data):
+        return struct.pack("!I", len(data)) + tag + data + struct.pack("!I", zlib.crc32(tag + data) & 0xffffffff)
+    ihdr = struct.pack("!IIBBBBB", size, size, 8, 6, 0, 0, 0)
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(bytes(raw))) + chunk(b"IEND", b"")
 
 def numero(valor):
     valor = (valor or "").strip().replace(",", ".")
@@ -22,10 +40,19 @@ def inicio():
 
 @app.route("/manifest.json")
 def manifest():
-    return send_from_directory("static", "manifest.json")
+    return send_from_directory("static", "manifest.json", mimetype="application/manifest+json")
+
 @app.route("/sw.js")
-def service_worker():
+def sw():
     return send_from_directory("static", "sw.js", mimetype="application/javascript")
+
+@app.route("/icon-192.png")
+def icon_192():
+    return Response(crear_png_azul(192), mimetype="image/png")
+
+@app.route("/icon-512.png")
+def icon_512():
+    return Response(crear_png_azul(512), mimetype="image/png")
 
 @app.route("/predecir", methods=["POST"])
 def predecir():
