@@ -15,16 +15,38 @@ else:
     columnas = list(modelo.feature_names_in_)
 
 def crear_png_azul(size):
-    # Genera un icono PNG valido cuadrado azul (#007bff) con marco blanco
     raw = bytearray()
-    borde = size // 8
+    cx = size / 2.0
     for y in range(size):
         raw.append(0)
+        # Degradado azul moderno (de celeste #0099ff arriba a azul intenso #0052cc abajo)
+        t = y / size
+        r_bg = 0
+        g_bg = int(153 * (1 - t) + 82 * t)
+        b_bg = int(255 * (1 - t) + 204 * t)
+        
         for x in range(size):
-            if x < borde or x >= size - borde or y < borde or y >= size - borde:
-                raw.extend((255, 255, 255, 255))
+            # Coordenadas normalizadas entre -1 y 1
+            nx = (x - cx) / (size * 0.35)
+            ny = (y - cx) / (size * 0.35)
+            
+            # Techo triangular de la casa
+            en_techo = (-0.85 <= ny <= -0.1) and (abs(nx) <= (ny + 0.85) * 1.35)
+            # Cuerpo cuadrado de la casa
+            en_cuerpo = (-0.1 < ny <= 0.75) and (abs(nx) <= 0.72)
+            # Puerta central
+            en_puerta = (0.25 <= ny <= 0.75) and (abs(nx) <= 0.2)
+            
+            if (en_techo or en_cuerpo) and not en_puerta:
+                raw.extend((255, 255, 255, 255)) # Casa blanca
             else:
-                raw.extend((0, 123, 255, 255))
+                raw.extend((r_bg, g_bg, b_bg, 255)) # Fondo degradado azul
+
+    def chunk(tag, data):
+        return struct.pack("!I", len(data)) + tag + data + struct.pack("!I", zlib.crc32(tag + data) & 0xffffffff)
+    ihdr = struct.pack("!IIBBBBB", size, size, 8, 6, 0, 0, 0)
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(bytes(raw))) + chunk(b"IEND", b"")
+
     def chunk(tag, data):
         return struct.pack("!I", len(data)) + tag + data + struct.pack("!I", zlib.crc32(tag + data) & 0xffffffff)
     ihdr = struct.pack("!IIBBBBB", size, size, 8, 6, 0, 0, 0)
